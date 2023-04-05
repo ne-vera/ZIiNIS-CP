@@ -1,193 +1,207 @@
+import numpy as np
 from PIL import Image
-import random
-import numpy as np
+from random import randint
 import json
-import numpy as np
 
-def upshift(a, index, n):
-  '''
-  Shift the collumn with index with numpy.roll(collumn, -n)
-  '''
-  col = a[:, index]
-  shift_col = np.roll(col, -n)
-  for i in range(len(a)):
-    a[i][index] = shift_col[i]
-  return a
-
-def downshift(a, index, n):
-  '''
-  Shift the collumn with index with numpy.roll(collumn, n)
-  '''
-  col = a[:, index]
-  shift_col = np.roll(col, n)
-  for i in range(len(a)):
-    a[i][index] = shift_col[i]
-  return a
+def columnshift(a, index, n):
+    col = []
+    for i in range(len(a)):
+        col.append(a[i][index])
+    shift_col = np.roll(col, -n)
+    for i in range(len(a)):
+        a[i][index] = shift_col[i]
+    return a
 
 def rotate(n):
-  '''
-  Rotate 180 the binary bit string of n and convert to integer
-  '''
-  bits = "{0:b}".format(n)
-  return int(bits[::-1], 2)
+    bits = '{0:b}'.format(n)
+    return int(bits[::-1], 2)
 
-def read_image(image_path):
-  image = Image.open(image_path)
-  image = image.convert('RGB')
-  image = np.array(image)
-  return image
+class Encryptor():
+    def __init__(self, image_path) -> None:
+        self.image = Image.open(image_path)
+        self.pix = self.image.load()
+        self.m = self.image.size[0]
+        self.n = self.image.size[1]
 
-def save_image(image, image_save_path):
-  save_img = Image.fromarray(image)
-  save_img = save_img.save(image_save_path)
-  return
+    def create_key(self, iter_max : int, key_path : str, alpha : int = 8):
+        self.Kr = [randint(0, 2 ** alpha - 1) for i in range(self.m)]
+        self.Kc = [randint(0, 2 ** alpha - 1) for i in range(self.n)]
+        self.iter_max = iter_max
+
+        dict_key = {
+            'Kr': self.Kr,
+            'Kc': self.Kc,
+            'iter_max' : self.iter_max
+        }
+
+        with open(key_path, 'w') as F:
+            json.dump(dict_key, F, indent=4)
+    
+    def encrypt(self, key_path: str, encrypted_image: str, iter_max: int):
+        self.create_key(iter_max, key_path)
+
+        r = []
+        g = []
+        b = []
+
+        for i in range(self.m):
+            r.append([])
+            g.append([])
+            b.append([])
+            for j in range(self.n):
+                rgb_per_pixel = self.pix[i,j]
+                r[i].append(rgb_per_pixel[0])
+                g[i].append(rgb_per_pixel[1])
+                b[i].append(rgb_per_pixel[2])
+        
+        for iter in range(iter_max):
+            # For each row
+            for i in range(self.m):
+                r_modulus = sum(r[i]) % 2
+                g_modulus = sum(g[i]) % 2
+                b_modulus = sum(b[i]) % 2
+                r[i] = np.roll(r[i], -self.Kr[i]) if r_modulus else np.roll(r[i], self.Kr[i])
+                g[i] = np.roll(g[i], -self.Kr[i]) if g_modulus else np.roll(g[i], self.Kr[i])
+                b[i] = np.roll(b[i], -self.Kr[i]) if b_modulus else np.roll(b[i], self.Kr[i])
+            
+            # For each column
+            for i in range(self.n):
+                r_sum = 0
+                g_sum = 0
+                b_sum = 0
+                for j in range(self.m):
+                    r_sum += r[j][i]
+                    g_sum += g[j][i]
+                    b_sum += b[j][i]
+                r_modulus = r_sum % 2
+                g_modulus = g_sum % 2
+                b_modulus = b_sum % 2
+                r = columnshift(r, i, -self.Kc[i]) if r_modulus else columnshift(r, i, self.Kc[i])
+                g = columnshift(g, i, -self.Kc[i]) if g_modulus else columnshift(g, i, self.Kc[i])
+                b = columnshift(b, i, -self.Kc[i]) if b_modulus else columnshift(b, i, self.Kc[i])
+                        
+            # For each row
+            for i in range(self.m):
+                for j in range(self.n):
+                    if(i%2==1):
+                        r[i][j] = r[i][j] ^ self.Kc[j]
+                        g[i][j] = g[i][j] ^ self.Kc[j]
+                        b[i][j] = b[i][j] ^ self.Kc[j]
+                    else:
+                        r[i][j] = r[i][j] ^ rotate(self.Kc[j])
+                        g[i][j] = g[i][j] ^ rotate(self.Kc[j])
+                        b[i][j] = b[i][j] ^ rotate(self.Kc[j])
+            # For each column            
+            for j in range(self.n):
+                for i in range(self.m):
+                    if(j%2==0):
+                        r[i][j] = r[i][j] ^ self.Kr[i]
+                        g[i][j] = g[i][j] ^ self.Kr[i]
+                        b[i][j] = b[i][j] ^ self.Kr[i]
+                    else:
+                        r[i][j] = r[i][j] ^ rotate(self.Kr[i])
+                        g[i][j] = g[i][j] ^ rotate(self.Kr[i])
+                        b[i][j] = b[i][j] ^ rotate(self.Kr[i])
+            
+        for i in range(self.m):
+            for j in range(self.n):
+                self.pix[i,j] = (r[i][j], g[i][j], b[i][j])
+        self.image.save(encrypted_image)
      
-# alpha
-def create_key(image, ITER_MAX, alpha=8):
-    # Create vector Kr and Kc
-    Kr = [random.randint(0, 2 ** alpha - 1) for i in range(image.shape[0])]
-    Kc = [random.randint(0, 2 ** alpha - 1) for i in range(image.shape[1])]
+class Decryptor():
+    def __init__(self, image_path) -> None:
+        self.image = Image.open(image_path)
+        self.pix = self.image.load()
+        self.m = self.image.size[0]
+        self.n = self.image.size[1]
 
-    dict_key = {"Kr": Kr,
-                "Kc": Kc,
-                "ITER": ITER_MAX
-                }
-    return dict_key
+    def load_key(self, key_path: str) -> None:
+        with open(key_path, 'r') as F:
+            dict_key = json.load(F)
 
-def save_key(dict_key, save_path):
-  with open(save_path, "w") as F:
-    json.dump(dict_key, F, indent=4)
+        self.Kr = dict_key['Kr']
+        self.Kc = dict_key['Kc']
+        self.iter_max = dict_key['iter_max']
+    
+    def decrypt(self, key_path: str, decrypted_image : str):
+        self.load_key(key_path)
 
-def load_key(save_path):
-    with open(save_path, "r") as F:
-        dict_key = json.load(F)
+        r = []
+        g = []
+        b = []
 
-    Kr = dict_key["Kr"]
-    Kc = dict_key["Kc"]
-    ITER_MAX = dict_key["ITER"]
-    return Kr, Kc, ITER_MAX
+        for i in range(self.m):
+            r.append([])
+            g.append([])
+            b.append([])
+            for j in range(self.n):
+                rgb_per_pixel = self.pix[i,j]
+                r[i].append(rgb_per_pixel[0])
+                g[i].append(rgb_per_pixel[1])
+                b[i].append(rgb_per_pixel[2])
 
-def encrypt_image(image, key_path):
-  # Load Key
-  Kr, Kc, ITER_MAX = load_key(key_path)
+        for iter in range(self.iter_max):
+             # For each column            
+            for j in range(self.n):
+                for i in range(self.m):
+                    if(j%2==0):
+                        r[i][j] = r[i][j] ^ self.Kr[i]
+                        g[i][j] = g[i][j] ^ self.Kr[i]
+                        b[i][j] = b[i][j] ^ self.Kr[i]
+                    else:
+                        r[i][j] = r[i][j] ^ rotate(self.Kr[i])
+                        g[i][j] = g[i][j] ^ rotate(self.Kr[i])
+                        b[i][j] = b[i][j] ^ rotate(self.Kr[i])
+            
+            # For each row
+            for i in range(self.m):
+                for j in range(self.n):
+                    if(i%2==1):
+                        r[i][j] = r[i][j] ^ self.Kc[j]
+                        g[i][j] = g[i][j] ^ self.Kc[j]
+                        b[i][j] = b[i][j] ^ self.Kc[j]
+                    else:
+                        r[i][j] = r[i][j] ^ rotate(self.Kc[j])
+                        g[i][j] = g[i][j] ^ rotate(self.Kc[j])
+                        b[i][j] = b[i][j] ^ rotate(self.Kc[j])
+            
+            # For each column
+            for i in range(self.n):
+                r_sum = 0
+                g_sum = 0
+                b_sum = 0
+                for j in range(self.m):
+                    r_sum += r[j][i]
+                    g_sum += g[j][i]
+                    b_sum += b[j][i]
+                r_modulus = r_sum % 2
+                g_modulus = g_sum % 2
+                b_modulus = b_sum % 2
+                r = columnshift(r, i, self.Kc[i]) if r_modulus else columnshift(r, i, -self.Kc[i])
+                g = columnshift(g, i, self.Kc[i]) if g_modulus else columnshift(g, i, -self.Kc[i])
+                b = columnshift(b, i, self.Kc[i]) if b_modulus else columnshift(b, i, -self.Kc[i])
 
-  # Split channels
-  r = np.array(image[:, :, 0])
-  g = np.array(image[:, :, 1])
-  b = np.array(image[:, :, 2])
+            # For each row
+            for i in range(self.m):
+                r_modulus = sum(r[i]) % 2
+                g_modulus = sum(g[i]) % 2
+                b_modulus = sum(b[i]) % 2
+                r[i] = np.roll(r[i], self.Kr[i]) if r_modulus else np.roll(r[i], -self.Kr[i])
+                g[i] = np.roll(g[i], self.Kr[i]) if g_modulus else np.roll(g[i], -self.Kr[i])
+                b[i] = np.roll(b[i], self.Kr[i]) if b_modulus else np.roll(b[i], -self.Kr[i])
+            
+        for i in range(self.m):
+            for j in range(self.n):
+                self.pix[i,j] = (r[i][j], g[i][j], b[i][j])
+        self.image.save(decrypted_image)
 
-  for iter in range(ITER_MAX):
-    # For each row
-    for i in range(image.shape[0]):
-      r_modulus = sum(r[i]) % 2 
-      g_modulus = sum(g[i]) % 2
-      b_modulus = sum(b[i]) % 2
-      r[i] = np.roll(r[i], -Kr[i]) if r_modulus else np.roll(r[i], Kr[i])
-      g[i] = np.roll(g[i], -Kr[i]) if g_modulus else np.roll(g[i], Kr[i])
-      b[i] = np.roll(b[i], -Kr[i]) if b_modulus else np.roll(b[i], Kr[i])
-  
-    # For each column 
-    for i in range(image.shape[1]):
-      r_modulus = sum(r[:, i]) % 2
-      g_modulus = sum(g[:, i]) % 2
-      b_modulus = sum(b[:, i]) % 2
-      r = downshift(r, i, Kc[i]) if r_modulus else upshift(r, i, Kc[i])
-      g = downshift(g, i, Kc[i]) if g_modulus else upshift(g, i, Kc[i])
-      b = downshift(b, i, Kc[i]) if b_modulus else upshift(b, i, Kc[i])
 
-    # For each row
-    for i in range(image.shape[0]):
-      for j in range(image.shape[1]):
-        if(i%2==1):
-          r[i][j] = r[i][j] ^ Kc[j]
-          g[i][j] = g[i][j] ^ Kc[j]
-          b[i][j] = b[i][j] ^ Kc[j]
-        else:
-          r[i][j] = r[i][j] ^ rotate(Kc[j])
-          g[i][j] = g[i][j] ^ rotate(Kc[j])
-          b[i][j] = b[i][j] ^ rotate(Kc[j])
-  # For each column
-    for j in range(image.shape[1]):
-      for i in range(image.shape[0]):
-        if(j%2==0):
-          r[i][j] = r[i][j] ^ Kr[i]
-          g[i][j] = g[i][j] ^ Kr[i]
-          b[i][j] = b[i][j] ^ Kr[i]
-        else:
-          r[i][j] = r[i][j] ^ rotate(Kr[i])
-          g[i][j] = g[i][j] ^ rotate(Kr[i])
-          b[i][j] = b[i][j] ^ rotate(Kr[i])
-  
-  encrypted_img = np.stack((r,g,b), axis=2)
-  return encrypted_img
 
-def decrypt_image(encrypted_image, key_path):
-  # Load key
-  Kr, Kc, ITER_MAX = load_key(key_path)
+key_path = '../Keys/key.json'
+encrypted_image = '../Images/encrypted_image.bmp'
+decrypted_image = '../Images/decrypted_image.bmp'
+rubik = Encryptor(r'../Images/taj.bmp')
+rubik.encrypt(key_path, encrypted_image, 1)
 
-  # Split channels
-  r = np.array(encrypted_image[:, :, 0])
-  g = np.array(encrypted_image[:, :, 1])
-  b = np.array(encrypted_image[:, :, 2])
-
-  for iteration in range(ITER_MAX):
-    # For each column
-    for j in range(encrypted_image.shape[1]):
-      for i in range(encrypted_image.shape[0]):
-        if(j%2==0): 
-          r[i][j] = r[i][j] ^ Kr[i]
-          g[i][j] = g[i][j] ^ Kr[i]
-          b[i][j] = b[i][j] ^ Kr[i]
-        else:
-          r[i][j] = r[i][j] ^ rotate(Kr[i])
-          g[i][j] = g[i][j] ^ rotate(Kr[i])
-          b[i][j] = b[i][j] ^ rotate(Kr[i])
-  
-    # For each row
-    for i in range(encrypted_image.shape[0]):
-      for j in range(encrypted_image.shape[1]):
-        if(i%2==1):
-          r[i][j] = r[i][j] ^ Kc[j]
-          g[i][j] = g[i][j] ^ Kc[j]
-          b[i][j] = b[i][j] ^ Kc[j]
-        else:
-          r[i][j] = r[i][j] ^ rotate(Kc[j])
-          g[i][j] = g[i][j] ^ rotate(Kc[j])
-          b[i][j] = b[i][j] ^ rotate(Kc[j])
-
-    # For each column 
-    for i in range(encrypted_image.shape[1]):
-      r_modulus = sum(r[:, i]) % 2
-      g_modulus = sum(g[:, i]) % 2
-      b_modulus = sum(b[:, i]) % 2
-      r = upshift(r, i, Kc[i]) if r_modulus else downshift(r, i, Kc[i])
-      g = upshift(g, i, Kc[i]) if g_modulus else downshift(g, i, Kc[i])
-      b = upshift(b, i, Kc[i]) if b_modulus else downshift(b, i, Kc[i])
-
-    # For each row
-    for i in range(encrypted_image.shape[0]):
-      r_modulus = sum(r[i]) % 2 
-      g_modulus = sum(g[i]) % 2
-      b_modulus = sum(b[i]) % 2
-      r[i] = np.roll(r[i], Kr[i]) if r_modulus else np.roll(r[i], -Kr[i])
-      g[i] = np.roll(g[i], Kr[i]) if g_modulus else np.roll(g[i], -Kr[i])
-      b[i] = np.roll(b[i], Kr[i]) if b_modulus else np.roll(b[i], -Kr[i])
-  
-  decrypted_img = np.stack((r, g, b), axis=2)
-  return decrypted_img
-
-image_path = "../Images/lena.jpg"
-key_path = "../Keys/key.json"
-encrypted_path = "../Images/encrypted_image.jpg"
-decrypted_path = "../Images/decrypted_image.jpg"
-
-image = read_image(image_path)
-dict_key = create_key(image, ITER_MAX=1)
-save_key(dict_key, save_path=key_path)
-en_image = encrypt_image(image, key_path)
-save_image(en_image, encrypted_path)
-
-encrypted_image = read_image(encrypted_path)
-# encrypted_image = en_image
-de_img = decrypt_image(encrypted_image,key_path)
-save_image(de_img, decrypted_path)
+dec = Decryptor(encrypted_image)
+dec.decrypt(key_path, decrypted_image)
