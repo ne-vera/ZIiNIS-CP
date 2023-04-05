@@ -2,9 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.filedialog import askdirectory
 from tkinter import filedialog
-import threading
 import sys
-import os
 from PIL import ImageTk, Image
 from validation import *
 from rubik import *
@@ -155,16 +153,19 @@ def selectKeyPath():
     keyPathEntry.insert(tk.INSERT, keyPath)
 
 def Rubik():
-    image = read_image(originalImagePath)
+    # image = read_image(originalImagePath)
+    rubik = Cubik(originalImagePath)
     if opTypeStr.get() == "encrypt":  
         global iter_max
         iter_max = int(iterationEntry.get())
-        dict_key = create_key(image, iter_max)
-        save_key(dict_key, keyPath)
-        transformed_image = encrypt_image(image, keyPath)
+        rubik.encrypt(transformedImagePath, iter_max, keyPath)
+        # dict_key = create_key(image, iter_max)
+        # save_key(dict_key, keyPath)
+        # transformed_image = encrypt_image(image, keyPath)
     else: 
-        transformed_image = decrypt_image(image, keyPath)
-    save_image(transformed_image, transformedImagePath)
+        rubik.decrypt(transformedImagePath, keyPath)
+    #     transformed_image = decrypt_image(image, keyPath)
+    # save_image(transformed_image, transformedImagePath)
 
     img = Image.open(transformedImagePath)
     # resize the image and apply a high-quality down sampling filter
