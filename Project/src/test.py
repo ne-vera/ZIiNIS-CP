@@ -1,130 +1,184 @@
-import numpy as np
-from PIL import Image
-from random import randint
-import json
-
-def columnshift(a, index, n):
-    col = []
-    for i in range(len(a)):
-        col.append(a[i][index])
-    shift_col = np.roll(col, -n)
-    for i in range(len(a)):
-        a[i][index] = shift_col[i]
-    return a
-
-def rotate(n):
-    bits = '{0:b}'.format(n)
-    return int(bits[::-1], 2)
-
-class Cubik():
-    def __init__(self, image_path) -> None:
-        self.image = Image.open(image_path)
-        self.pix = self.image.load()
-        self.m = self.image.size[0]
-        self.n = self.image.size[1]
-        self.initialize_rgb()
-    
-    def initialize_rgb(self) -> None:
-        self.r = []
-        self.g = []
-        self.b = []
-
-        for i in range(self.m):
-            self.r.append([])
-            self.g.append([])
-            self.b.append([])
-            for j in range(self.n):
-                rgb_per_pixel = self.pix[i,j]
-                self.r[i].append(rgb_per_pixel[0])
-                self.g[i].append(rgb_per_pixel[1])
-                self.b[i].append(rgb_per_pixel[2])
-
-    def create_key(self, iter_max : int, key_path : str, alpha : int = 8):
-        self.Kr = [randint(0, 2 ** alpha - 1) for i in range(self.m)]
-        self.Kc = [randint(0, 2 ** alpha - 1) for i in range(self.n)]
-        self.iter_max = iter_max
-
-        dict_key = {
-            'Kr': self.Kr,
-            'Kc': self.Kc,
-            'iter_max' : self.iter_max
-        }
-
-        with open(key_path, 'w') as F:
-            json.dump(dict_key, F, indent=4)
-    
-    def load_key(self, key_path: str) -> None:
-        with open(key_path, 'r') as F:
-            dict_key = json.load(F)
-
-        self.Kr = dict_key['Kr']
-        self.Kc = dict_key['Kc']
-        self.iter_max = dict_key['iter_max']
-
-    def roll_row(self, encryption_flag : bool) -> None:
-        direction_coef = 1 if encryption_flag else -1
-        for i in range(self.m):
-                r_modulus = sum(self.r[i]) % 2
-                g_modulus = sum(self.g[i]) % 2
-                b_modulus = sum(self.b[i]) % 2
-                self.r[i] = np.roll(self.r[i], -direction_coef * self.Kr[i]) if r_modulus else np.roll(self.r[i], direction_coef * self.Kr[i])
-                self.g[i] = np.roll(self.g[i], -direction_coef * self.Kr[i]) if g_modulus else np.roll(self.g[i], direction_coef * self.Kr[i])
-                self.b[i] = np.roll(self.b[i], -direction_coef * self.Kr[i]) if b_modulus else np.roll(self.b[i], direction_coef * self.Kr[i])
-    
-    def roll_column(self, encryption_flag: bool) -> None:
-        direction_coef = 1 if encryption_flag else -1
-        for i in range(self.n):
-                r_sum = 0
-                g_sum = 0
-                b_sum = 0
-                for j in range(self.m):
-                    r_sum += self.r[j][i]
-                    g_sum += self.g[j][i]
-                    b_sum += self.b[j][i]
-                r_modulus = r_sum % 2
-                g_modulus = g_sum % 2
-                b_modulus = b_sum % 2
-                self.r = columnshift(self.r, i, - direction_coef * self.Kc[i]) if r_modulus else columnshift(self.r, i, direction_coef * self.Kc[i])
-                self.g = columnshift(self.g, i, - direction_coef * self.Kc[i]) if g_modulus else columnshift(self.g, i, direction_coef * self.Kc[i])
-                self.b = columnshift(self.b, i, - direction_coef * self.Kc[i]) if b_modulus else columnshift(self.b, i, direction_coef * self.Kc[i])
-    
-    def xor_pixels(self) -> None:
-        for i in range(self.m):
-            for j in range(self.n):
-                row_xor_operand = self.Kc[j] if i%2==1 else rotate(self.Kc[j])
-                column_xor_operand = self.Kr[i] if j%2==0 else rotate(self.Kr[j])
-                self.r[i][j] = self.r[i][j] ^ row_xor_operand ^ column_xor_operand
-                self.g[i][j] = self.g[i][j] ^ row_xor_operand ^ column_xor_operand
-                self.b[i][j] = self.b[i][j] ^ row_xor_operand ^ column_xor_operand
-        
-    def encrypt(self, encrypted_image: str, iter_max : int, key_path : str) -> None:
-        self.create_key(iter_max, key_path)
-        for iter in range(self.iter_max):
-            self.roll_row(encryption_flag=True)
-            self.roll_column(encryption_flag=True)
-            self.xor_pixels()
-        for i in range(self.m):
-            for j in range(self.n):
-                self.pix[i,j] = (self.r[i][j], self.g[i][j], self.b[i][j])
-        self.image.save(encrypted_image)
-    
-    def decrypt(self, decrypted_image : str, key_path : str) -> None:
-        self.load_key(key_path)
-        for iter in range(self.iter_max):
-            self.xor_pixels()
-            self.roll_column(encryption_flag=False)
-            self.roll_row(encryption_flag=False)
-        for i in range(self.m):
-            for j in range(self.n):
-                self.pix[i,j] = (self.r[i][j], self.g[i][j], self.b[i][j])
-        self.image.save(decrypted_image)
+import tkinter as tk
+import tkinter.ttk as ttk
+from tkinter.filedialog import askdirectory
+from tkinter import filedialog
+import sys
+from PIL import ImageTk, Image
+from rubik import *
 
 
-key_path = '../Keys/key.json'
-encrypted_image = '../Images/encrypted_image.png'
-decrypted_image = '../Images/decrypted_image.png'
+originalImagePath = None
+transformedImagePath = None
+keyPath = None
+iter_max = None
 
-rubik = Cubik(r'../Images/taj.png')
-rubik.encrypt(encrypted_image, 1, key_path)
-rubik = Cubik(encrypted_image)
-rubik.decrypt(decrypted_image, key_path)
+root = tk.Tk()
+root.minsize(500, 500)
+root.title("Rubik")
+root.resizable(True, True)
+
+inputsFrame = ttk.Frame(root,  borderwidth=1, relief=tk.SUNKEN)
+inputsFrame.grid(row=0, column=1, rowspan=5,
+                 columnspan=10, pady=10, padx=30)
+inputsFrame["padding"] = (5, 20, 5, 20)
+outputsFrame = ttk.Frame(root, borderwidth=1, relief=tk.SUNKEN)
+outputsFrame.grid(row=6, column=1, rowspan=8, pady=5, padx=10)
+outputsFrame["padding"] = (5, 0, 5, 0)
+imageFrame = ttk.Frame(inputsFrame)
+imageFrame.grid(row=12, column=0, rowspan=10,
+                            columnspan=10, pady=30, padx=30)
+
+# -----------------------------------------------
+# operation type combobox
+opTypeStr = tk.StringVar()
+operationLabel = ttk.Label(
+    inputsFrame, text="Operation Type:")
+operationLabel.grid(row=0, column=0, sticky=tk.W)
+operationDropDown = ttk.Combobox(
+    inputsFrame, textvariable=opTypeStr, state="readonly",  width=27)
+operationDropDown.grid(row=1, column=0, sticky=tk.W)
+operationDropDown["values"] = ("encrypt", "decrypt")
+operationDropDown.current(0)
+operationDropDown.bind(
+    "<<ComboboxSelected>>", lambda event: operationTypeChanged())
+
+# --------------------------------------------------------------------------------------------
+# Image selection
+originalImageDirLabel = ttk.Label(inputsFrame, text="Image Path:")
+originalImageDirLabel.grid(row=2, column=0, sticky=tk.W)
+originalImagePathEntry = ttk.Entry(inputsFrame, width="50")
+originalImagePathEntry.grid(row=3, column=0, sticky=tk.W)
+btnChooseOrigImgDir = ttk.Button(inputsFrame, text="Open",   width=8,
+                           command=lambda: selectOriginalImage())
+btnChooseOrigImgDir.grid(row=3, column=1, sticky=tk.W)
+# --------------------------------------------------------------------------------------------
+transformedImageLabel = ttk.Label(inputsFrame, text="Encrypted Image Path:")
+transformedImageLabel.grid(row=4, column=0, sticky=tk.W)
+transformedImagePathEntry = ttk.Entry(inputsFrame, width="50")
+transformedImagePathEntry.grid(row=5, column=0, sticky=tk.W)
+btnChooseTransformedImgDir = ttk.Button(inputsFrame, text="Open",   width=8,
+                                command=lambda: selectTransformedImage())
+btnChooseTransformedImgDir.grid(row=5, column=1, sticky=tk.W)
+# --------------------------------------------------------------------------------------------
+# Key Path Selection
+keyPathLabel = ttk.Label(inputsFrame, text="Key Path:")
+keyPathLabel.grid(row=6, column=0, sticky=tk.W)
+keyPathEntry = ttk.Entry(inputsFrame, width="50")
+keyPathEntry.grid(row=7, column=0, sticky=tk.W)
+btnChooseKeyPath = ttk.Button(inputsFrame, text="Open",   width=8,
+                                command=lambda: selectKeyPath())
+btnChooseKeyPath.grid(row=7, column=1, sticky=tk.W)
+# --------------------------------------------------------------------------------------------
+vcmd = root.register(validateIntInput)
+iterLabel = ttk.Label(inputsFrame, text="Iterations:")
+iterLabel.grid(row=8, column=0, sticky=tk.W)
+iterationEntry = ttk.Entry(
+inputsFrame, width="30", validate="key", validatecommand=(vcmd, "%P"))
+iterationEntry.grid(row=9, column=0, sticky=tk.W)
+# --------------------------------------------------------------------------------------------
+# progress bar
+progressBar = ttk.Progressbar(
+    outputsFrame, orient="horizontal", length=550, mode="indeterminate")
+# --------------------------------------------------------------------------------------------
+# cancel button
+btnCancel = ttk.Button(outputsFrame, text="Exit", width=8,
+                       command=lambda: sys.exit(0))
+btnCancel.grid(row=13, column=3, sticky=tk.E, pady=10)
+
+btnOpImage = ttk.Button()
+
+def operationTypeChanged():
+    text = opTypeStr.get()
+    if text == "encrypt":
+        transformedImageLabel.config(text="Encrypted Image Path:")
+        iterLabel.grid(row=8, column=0, sticky=tk.W)
+        iterationEntry.grid(row=9, column=0, sticky=tk.W)
+    else:
+        transformedImageLabel.config(text="Decrypted Image Path:")
+        iterationEntry.grid_remove()
+        iterLabel.grid_remove()
+
+    # encrypt/decrypt button
+    btnOpImage = ttk.Button(inputsFrame, text=text, width=8,
+                                command=lambda: Rubik())
+    btnOpImage.grid(row=1, column=2)
+
+def selectOriginalImage():
+    """Open an image from a directory"""
+    # Select the Imagename  from a folder
+    tk.Tk().withdraw()
+    global originalImagePath
+    originalImagePath = filedialog.askopenfilename(title="Open Image", filetypes=[
+                                                ("Image Files", ".png .jpg .jpeg .svg")])
+    originalImagePathEntry.delete(0, tk.END)
+    originalImagePathEntry.insert(tk.INSERT, originalImagePath)  
+    print(type(originalImagePath))  
+    # opens the image
+    img = Image.open(originalImagePath)
+    # resize the image and apply a high-quality down sampling filter
+    img = img.resize((100, 100), Image.ANTIALIAS)    
+    # PhotoImage class is used to add image to widgets, icons etc
+    img = ImageTk.PhotoImage(img)    
+    # create a label
+    panel = ttk.Label(imageFrame, image=img)   
+    # set the image as img
+    panel.image = img
+    panel.grid(row=1, column=0, padx=5)
+    # try:
+    #     btnOpImage["state"] = "normal"
+    # except:
+    #     pass
+
+def selectTransformedImage():
+    """Open an image from a directory"""
+    # Select the Imagename  from a folder
+    tk.Tk().withdraw()
+    global transformedImagePath
+    transformedImagePath = filedialog.askopenfilename(title="Open Image", filetypes=[
+                                                ("Image Files", ".png .jpg .jpeg .svg")])
+    transformedImagePathEntry.delete(0, tk.END)
+    transformedImagePathEntry.insert(tk.INSERT, transformedImagePath)
+    # try:
+    #     btnOpImage["state"] = "normal"
+    # except:
+    #     pass 
+
+def selectKeyPath():
+    tk.Tk().withdraw()
+    global keyPath
+    keyPath = filedialog.askopenfilename(title="Open Key", filetypes=[
+                                           ("JSON Files", ".json")])
+    keyPathEntry.delete(0, tk.END)
+    keyPathEntry.insert(tk.INSERT, keyPath)
+
+def Rubik():
+    # image = read_image(originalImagePath)
+    rubik = Cubik(originalImagePath)
+    if opTypeStr.get() == "encrypt":  
+        global iter_max
+        iter_max = int(iterationEntry.get())
+        rubik.encrypt(transformedImagePath, iter_max, keyPath)
+        # dict_key = create_key(image, iter_max)
+        # save_key(dict_key, keyPath)
+        # transformed_image = encrypt_image(image, keyPath)
+    else: 
+        rubik.decrypt(transformedImagePath, keyPath)
+    #     transformed_image = decrypt_image(image, keyPath)
+    # save_image(transformed_image, transformedImagePath)
+
+    img = Image.open(transformedImagePath)
+    # resize the image and apply a high-quality down sampling filter
+    img = img.resize((100, 100), Image.ANTIALIAS)    
+    # PhotoImage class is used to add image to widgets, icons etc
+    img = ImageTk.PhotoImage(img)    
+    # create a label
+    panel = ttk.Label(imageFrame, image=img)   
+    # set the image as img
+    panel.image = img
+    panel.grid(row=1, column=1, padx=5)
+
+# def checkFields():
+#     return True if (iterationEntry.get()) else False
+
+operationTypeChanged()
+root.mainloop()

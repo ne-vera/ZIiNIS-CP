@@ -19,6 +19,7 @@ def rotate(n):
 class Cubik():
     def __init__(self, image_path) -> None:
         self.image = Image.open(image_path)
+        # self.image = Image.open(image_path).convert('RGBA')
         self.pix = self.image.load()
         self.m = self.image.size[0]
         self.n = self.image.size[1]
