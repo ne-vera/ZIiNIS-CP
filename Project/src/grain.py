@@ -1,5 +1,12 @@
+import cv2
 class Grain:
-    def __init__(self, key, iv):
+    def __init__(self, file, key, iv):
+        self.img = cv2.imread(file, cv2.IMREAD_COLOR)
+        self.row = self.img.shape[0]
+        self.col = self.img.shape[1]
+        self.init_constatonts(key, iv)
+
+    def init_constatonts(self, key, iv):
         self.INITCLOCKS = 160
         self.NFSR = [0] * 80
         self.LFSR = [0] * 80
@@ -40,7 +47,6 @@ class Grain:
         self.boolTable = [0,0,1,1,0,0,1,0,0,1,1,0,1,1,0,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0]
         self.keysize = 80
         self.ivsize = 64
-
         # Convert string key 00000000 to [k1, k2, k3]
         key = [key[i:i + 2] for i in range(0, len(key), 2)]
         self.key = [int(i, 16) for i in key]
@@ -104,20 +110,34 @@ class Grain:
 
     def encrypt(self, msg):
         keystream = self.keystream_bytes(len(msg))
-        
         cipher = [x^y for x,y in zip(msg, keystream)]
-
         return cipher
     
+    def image_encrypt(self, outfile):
+        for i in range(self.row):
+            for j in range(self.col):
+                self.img[i][j] = self.encrypt(self.img[i][j])
+        cv2.imwrite(outfile, self.img)
+
+    
     def decrypt(self, msg):
-        keystream = self.keystream_bytes(len(msg))
-        
+        keystream = self.keystream_bytes(len(msg)) 
         plain = [x^y for x,y in zip(msg, keystream)]
-
         return plain
+    
+    def image_decrypt(self, outfile):
+        for i in range(self.row):
+            for j in range(self.col):
+                self.img[i][j] = self.decrypt(self.img[i][j])
+        cv2.imwrite(outfile, self.img)
+
+original_image = '../Images/black.png'
+encrypted_image = '../Images/encrypted_image.png'
+decrypted_image = '../Images/decrypted_image.png'
 
 
+image = Grain(original_image, "00000000000000000000", "0000000000000000")
+image.image_encrypt(encrypted_image)
 
-#grain = Grain('80000000000000000000', '0000000000000000')
-
-#print grain.keystream_bytes(2)
+# image = Grain(encrypted_image, "00000000000000000000", "0000000000000000")
+# image.image_decrypt(decrypted_image)
