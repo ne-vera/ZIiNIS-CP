@@ -121,11 +121,11 @@ class Cubik():
         self.image.save(decrypted_image)
 
 
-# key_path = '../Keys/key.json'
-# encrypted_image = '../Images/encrypted_image.png'
-# decrypted_image = '../Images/decrypted_image.png'
+key_path = '../Keys/key.json'
+encrypted_image = '../Images/encrypted_image.jpg'
+decrypted_image = '../Images/decrypted_image.jpg'
 
-# rubik = Cubik(r'../Images/taj.png')
-# rubik.encrypt(encrypted_image, 1, key_path)
-# rubik = Cubik(encrypted_image)
-# rubik.decrypt(decrypted_image, key_path)
+rubik = Cubik(r'../Images/lena_bw.jpg')
+rubik.encrypt(encrypted_image, 1, key_path)
+rubik = Cubik(encrypted_image)
+rubik.decrypt(decrypted_image, key_path)
