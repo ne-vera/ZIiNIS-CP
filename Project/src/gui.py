@@ -4,154 +4,195 @@ from tkinter import filedialog
 from rubik import Cubik
 from tkinter import messagebox
 from PIL import ImageTk, Image
+import os
+import sv_ttk
+
 
 class GUI(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.title('Rubik')
-        self.state('zoomed') 
+        self.title('Курсовая работа ЗИиНИС')
+        sv_ttk.set_theme('dark')
 
         # -----------------------------------------------
         # Frames
-        self.inputs_frame = ttk.Frame(self,  borderwidth=1, relief=tk.SUNKEN)
-        self.inputs_frame.grid(row=0, column=1, rowspan=10,
-                 columnspan=10, pady=10, padx=30)
-        self.inputs_frame['padding'] = (5, 20, 5, 20)
+        self.main_frame = ttk.Frame(self)
+        self.main_frame.pack()
 
-        self.outputs_frame = ttk.Frame(self, borderwidth=1, relief=tk.SUNKEN)
-        self.outputs_frame.grid(row=11, column=1, rowspan=8, pady=5, padx=10)
-        self.outputs_frame['padding'] = (5, 0, 5, 0)
+        self.inputs_frame = ttk.LabelFrame(self.main_frame, text='Заполните поля')
+        self.inputs_frame.grid(row=1, column=0, padx=20, pady=10)
+
+        self.outputs_frame = ttk.LabelFrame(self.main_frame, text='Результат')
+        self.outputs_frame.grid(row=1, column=1, padx=20, pady=10)
+
+        # -----------------------------------------------
+        # Label
+        self.title_label = ttk.Label(self.main_frame, text='Кодирование изображений на основе прицнипа кубика Рубика')
+        self.title_label.grid(row=0, column=0, padx=20, pady=10)
 
         # -----------------------------------------------
         # Operation type combobox
         self.operation_type_str = tk.StringVar()
+        self.operation_type_str.set('')
         self.operation_label = ttk.Label(
-            self.inputs_frame, text='Operation Type:')
-        self.operation_label.grid(row=0, column=0, sticky=tk.W)
+            self.inputs_frame, text='Операция:')
+        self.operation_label.grid(row=0, column=0,  padx=10, pady=(10,5), sticky='ew')
         self.operation_dropdown = ttk.Combobox(
             self.inputs_frame, textvariable=self.operation_type_str, state='readonly',  width=27)
-        self.operation_dropdown.grid(row=1, column=0, sticky=tk.W)
-        self.operation_dropdown['values'] = ('Encrypt', 'Decrypt')
+        self.operation_dropdown.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+        self.operation_dropdown['values'] = ('Кодирование', 'Декодирование')
         self.operation_dropdown.current(0)
         self.operation_dropdown.bind('<<ComboboxSelected>>', lambda event: self.operation_type_changed())
+
         # -----------------------------------------------
         # Input fields
+        # Original image path
+        self.original_image_path = tk.StringVar()
+        self.original_image_path.trace('w', self.display_original_image)
+        self.original_image_path_label = ttk.Label(self.inputs_frame, text = 'Путь к изображению:')
+        self.original_image_path_label.grid(row=2, column=0, padx=10, pady=5, sticky='ew')
+        self.original_image_path_entry = ttk.Entry(self.inputs_frame, width=50, textvariable=self.original_image_path)
+        self.original_image_path_entry.grid(row=3, column=0, padx=10, pady=5, sticky='ew')
+        self.btn_select_original_image_path = ttk.Button(self.inputs_frame, text = 'Открыть', command=lambda: self.select_original_image_path())
+        self.btn_select_original_image_path.grid(row=3, column=1, padx=10, pady=5, sticky='ew')
 
-        # Original image
-        self.original_image_path_label = ttk.Label(self.inputs_frame, text = 'Image Path:')
-        self.original_image_path_label.grid(row=2, column=0, sticky=tk.W)
-        self.original_image_path_entry = ttk.Entry(self.inputs_frame, width='50')
-        self.original_image_path_entry.grid(row=3, column=0, sticky=tk.W)
-        self.btn_select_original_image_path = ttk.Button(self.inputs_frame, text = 'Open', command=lambda: self.select_original_image_path())
-        self.btn_select_original_image_path.grid(row=3, column=1, sticky = tk.W)
+        # Key path
+        self.key_path = tk.StringVar()
+        self.key_path_label = ttk.Label(self.inputs_frame, text = 'Путь к ключу:')
+        self.key_path_label.grid(row=4, column=0, padx=10, pady=5, sticky='ew')
+        self.key_path_entry = ttk.Entry(self.inputs_frame, width= 50, textvariable=self.key_path)
+        self.key_path_entry.grid(row=5, column=0, padx=10, pady=5, sticky='ew')
+        self.btn_select_key_path = ttk.Button(self.inputs_frame, text = 'Открыть', command=lambda: self.select_key_path())
+        self.btn_select_key_path.grid(row=5, column=1, padx=10, pady=5, sticky='ew')
 
-        # Key
-        self.key_path_label = ttk.Label(self.inputs_frame, text = 'Key Path:')
-        self.key_path_label.grid(row=4, column=0, sticky=tk.W)
-        self.key_path_entry = ttk.Entry(self.inputs_frame, width = '50')
-        self.key_path_entry.grid(row=5, column=0, sticky=tk.W)
-        self.btn_select_key_path = ttk.Button(self.inputs_frame, text = 'Open', command=lambda: self.select_key_path())
-        self.btn_select_key_path.grid(row=5, column=1, sticky = tk.W)
+        # Transformed image path
+        self.transformed_image_path = tk.StringVar()
+        self.transformed_image_path_label = ttk.Label(self.inputs_frame, text = 'Путь к закодированному изображению:')
+        self.transformed_image_path_label.grid(row=8, column=0, padx=10, pady=5, sticky='ew')
+        self.transformed_image_path_entry = ttk.Entry(self.inputs_frame, width= 50, textvariable=self.transformed_image_path)
+        self.transformed_image_path_entry.grid(row=9, column=0, padx=10, pady=5, sticky='ew')
+        self.btn_choose_transfromed_image_path = ttk.Button(self.inputs_frame, text = 'Открыть', command=lambda: self.select_transformed_image_path())
+        self.btn_choose_transfromed_image_path.grid(row=9, column=1, padx=10, pady=5, sticky='ew')
 
-        # Transformed image
-        self.transformed_image_path_label = ttk.Label(self.inputs_frame, text = 'Encrypted Image Path:')
-        self.transformed_image_path_label.grid(row=8, column=0, sticky=tk.W)
-        self.transformed_image_path_entry = ttk.Entry(self.inputs_frame, width = '50')
-        self.transformed_image_path_entry.grid(row=9, column=0, sticky=tk.W)
-        self.btn_choose_transfromed_image_path = ttk.Button(self.inputs_frame, text = 'Open', command=lambda: self.select_transformed_image_path())
-        self.btn_choose_transfromed_image_path.grid(row=9, column=1, sticky = tk.W)
-        # -----------------------------------------------
-        # Otput fields
+        # Separator
+        self.separator = ttk.Separator(self.inputs_frame)
+        self.separator.grid(row=10, column=0, columnspan=2, padx=10, pady=20, sticky='ew')
 
-        # Progress bar
-        self.progressbar = ttk.Progressbar(self.outputs_frame, orient="horizontal", length=550, mode="indeterminate")
-        
         # Exit button
-        self.btn_exit = ttk.Button(self.outputs_frame, text="Exit", width=8)
-        self.btn_exit.grid(row=3, column=3, sticky=tk.E, pady=10)
-        # -----------------------------------------------
+        self.btn_exit = ttk.Button(self.inputs_frame, text='Выйти', width=20)
+        self.btn_exit.grid(row=11, column=0, padx=10, pady=20, sticky='w')
 
-    def start_mainloop(self) -> None:
-        self.operation_type_changed()
-        self.mainloop()
+        # -----------------------------------------------
+        # Output
+        self.original_image_label = ttk.Label(self.outputs_frame, text='Оригинальное изображение')
+        self.original_image_label.grid(row=0, column=0, padx=10, pady=20, sticky='ew')
+
+        self.transformed_image_label = ttk.Label(self.outputs_frame, text='Закодированное изображение')
+        self.transformed_image_label.grid(row=0, column=1, padx=10, pady=20, sticky='ew')
+
+        self.progressbar = ttk.Progressbar(self.outputs_frame, orient='horizontal', mode='indeterminate')
+        self.progressbar.grid(row=2, column=0, columnspan=2, sticky='ew')
+        # -----------------------------------------------
 
     def operation_type_changed(self) -> None:
         text = self.operation_type_str.get()
 
-        if text == 'Encrypt':
-             # Iterations
-            self.iter_label = ttk.Label(self.inputs_frame, text = 'Number of Iterations:')
-            self.iter_label.grid(row=6, column=0, sticky=tk.W)
-            self.iter_entry = ttk.Entry(self.inputs_frame, width = '30')
-            self.iter_entry.grid(row=7, column=0, sticky=tk.W)
+        if text == 'Кодирование':
+            # Iterations                              
+            self.iter_max = tk.IntVar()
+            self.iter_label = ttk.Label(self.inputs_frame, text = 'Количество итераций (ITER_MAX):')
+            self.iter_label.grid(row=6, column=0, padx=10, pady=5, sticky='w')
+            self.iter_entry = ttk.Entry(self.inputs_frame, width=30, textvariable=self.iter_max)
+            self.iter_entry.grid(row=7, column=0, padx=10, pady=5, sticky='w')
+            self.iter_entry.configure(validate="key", validatecommand=(self.register(self.validate_iter), '%P'))
 
-        if text == 'Decrypt':
+
+        if text == 'Декодирование':
             self.iter_label.grid_remove()
             self.iter_entry.grid_remove()
-            self.transformed_image_path_label.config(text='Decrypred Image Path:')
+            self.transformed_image_path_label.config(text='Путь к декодированному изображению:')
+            self.transformed_image_label.config(text='Декодированное изображение')
 
         # Transform button
-        self.btn_transform_image = ttk.Button(self.inputs_frame, text = text, state = 'normal', command=lambda: self.transform())
-        self.btn_transform_image.grid(row = 10, column = 1, sticky=tk.W)
+        self.btn_transform_image = ttk.Button(self.inputs_frame, text=text, state ='normal', style='Accent.TButton', width=20, command=lambda: self.transform())
+        self.btn_transform_image.grid(row=11, column=1, padx=10, pady=20, sticky='w')
 
+    def validate_iter(self, new_value):
+        if new_value.isdigit():
+            return True
+        else:
+            return False
+    
     def select_original_image_path(self) -> None:
-        tk.Tk().withdraw()
         image_path = filedialog.askopenfilename(title="Open Image", filetypes=[
                                                     ("Image Files", ".png .bmp")])
         self.original_image_path_entry.delete(0, tk.END)
         self.original_image_path_entry.insert(tk.INSERT, image_path)
 
-        # opens the image
-        img = Image.open(image_path)
-
-        # PhotoImage class is used to add image to widgets, icons etc
-        img = ImageTk.PhotoImage(img)
-
-        # create a label
-        self.original_image_panel = ttk.Label(self.outputs_frame, image=img)
-
-        # set the image as img
-        self.original_image_panel.image = img
-        self.original_image_panel.grid(row=1, column=1, padx=5)
+    
+    def display_original_image(self, *args) -> None:
+        img_path = self.original_image_path.get()
+        if os.path.exists(img_path):
+            img = Image.open(img_path)
+            img = img.resize((300, 300))
+            img = ImageTk.PhotoImage(img)
+            self.original_image_display = ttk.Label(self.outputs_frame, image=img)
+            self.original_image_display.image = img
+            self.original_image_display.grid(row=1, column=0, padx=10, pady=20)
+        else:
+            messagebox.showerror(message='Изображение не найдено')
     
     def select_transformed_image_path(self) -> None:
-        tk.Tk().withdraw()
         image_path = filedialog.askopenfilename(title="Open Image", filetypes=[
                                                     ("Image Files", ".png .bmp")])
         self.transformed_image_path_entry.delete(0, tk.END)
         self.transformed_image_path_entry.insert(tk.INSERT, image_path)
 
     def select_key_path(self) -> None:
-        tk.Tk().withdraw()
         key_path = filedialog.askopenfilename(title="Open JSON", filetypes=[
                                                     ("JSON", ".json ")])
         self.key_path_entry.delete(0, tk.END)
         self.key_path_entry.insert(tk.INSERT, key_path)
-        
-    def transform(self):
-        self.original_image_path = self.original_image_path_entry.get()
-        self.transformed_image_path = self.transformed_image_path_entry.get()
-        self.key_path = self.key_path_entry.get()
-        rubik = Cubik(self.original_image_path)
-        if self.operation_type_str.get() == 'Encrypt':
-            self.iter_max = int(self.iter_entry.get())
-            rubik.encrypt(self.transformed_image_path, self.iter_max, self.key_path)
-        elif self.operation_type_str.get() == 'Decrypt':
-            rubik.decrypt(self.transformed_image_path, self.key_path)
-
-        # opens the image
-        img = Image.open(self.transformed_image_path)
-
-        # PhotoImage class is used to add image to widgets, icons etc
+    
+    def display_transformed_image(self, transformed_image_path: str):
+        img = Image.open(transformed_image_path)
+        img = img.resize((300, 300))
         img = ImageTk.PhotoImage(img)
+        self.transformed_image_display = ttk.Label(self.outputs_frame, image=img)
+        self.transformed_image_display.image = img
+        self.transformed_image_display.grid(row=1, column=1, padx=10, pady=20)
 
-        # create a label
-        self.transformed_image_panel = ttk.Label(self.outputs_frame, image=img)
+    def check_fields(self):
+        original_image_path = self.original_image_path.get()
+        transformed_image_path = self.transformed_image_path.get()
+        key_path = self.key_path.get()
+        if self.operation_type_str.get() == 'Кодирование':
+            iter_max = int(self.iter_max.get())
+            if original_image_path != '' and transformed_image_path != '' and key_path != '' and iter_max != '':
+                return True
+        elif self.operation_type_str.get() == 'Декодирование':
+            if original_image_path != '' and transformed_image_path != '' and key_path != '':
+                return True
 
-        # set the image as img
-        self.transformed_image_panel.image = img
-        self.transformed_image_panel.grid(row=1, column=2, padx=5)
+    def transform(self):
+        original_image_path = self.original_image_path.get()
+        transformed_image_path = self.transformed_image_path.get()
+        key_path = self.key_path.get()
+        rubik = Cubik(original_image_path)
+        if self.check_fields():
+            if self.operation_type_str.get() == 'Кодирование':
+                iter_max = int(self.iter_max.get())
+                rubik.encrypt(transformed_image_path, iter_max, key_path)
+            elif self.operation_type_str.get() == 'Декодирование':
+                rubik.decrypt(transformed_image_path, key_path)
+            self.display_transformed_image(transformed_image_path)
+        else:
+            messagebox.showerror(message='Заполните все поля')
+        
+    def start_mainloop(self) -> None:
+        self.operation_type_changed()
+        self.mainloop()
 
 root = GUI()
 root.start_mainloop()
