@@ -16,7 +16,7 @@ def rotate(n):
     bits = '{0:b}'.format(n)
     return int(bits[::-1], 2)
 
-class Cubik():
+class Rubik():
     def __init__(self, image_path) -> None:
         with Image.open(image_path, mode='r') as img:
             self.image = img.convert('RGB')
@@ -125,7 +125,7 @@ class Cubik():
 # encrypted_image = '../Images/encrypted_image.png'
 # decrypted_image = '../Images/decrypted_image.png'
 
-# rubik = Cubik(r'../Images/taj.png')
+# rubik = Rubik(r'../Images/taj.png')
 # rubik.encrypt(encrypted_image, 1, key_path)
-# rubik = Cubik(encrypted_image)
+# rubik = Rubik(encrypted_image)
 # rubik.decrypt(decrypted_image, key_path)

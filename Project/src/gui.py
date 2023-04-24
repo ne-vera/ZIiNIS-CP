@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
-from rubik import Cubik
+from rubik import Rubik
 from tkinter import messagebox
 from PIL import ImageTk, Image
 import os
@@ -80,7 +80,7 @@ class GUI(tk.Tk):
         self.separator.grid(row=10, column=0, columnspan=2, padx=10, pady=20, sticky='ew')
 
         # Exit button
-        self.btn_exit = ttk.Button(self.inputs_frame, text='Выйти', width=20)
+        self.btn_exit = ttk.Button(self.inputs_frame, text='Выйти', width=20, command=self.destroy)
         self.btn_exit.grid(row=11, column=0, padx=10, pady=20, sticky='w')
 
         # -----------------------------------------------
@@ -129,19 +129,17 @@ class GUI(tk.Tk):
                                                     ("Image Files", ".png .bmp")])
         self.original_image_path_entry.delete(0, tk.END)
         self.original_image_path_entry.insert(tk.INSERT, image_path)
-
-    
+  
     def display_original_image(self, *args) -> None:
         img_path = self.original_image_path.get()
-        if os.path.exists(img_path):
-            img = Image.open(img_path)
-            img = img.resize((300, 300))
-            img = ImageTk.PhotoImage(img)
-            self.original_image_display = ttk.Label(self.outputs_frame, image=img)
-            self.original_image_display.image = img
-            self.original_image_display.grid(row=1, column=0, padx=10, pady=20)
-        else:
-            messagebox.showerror(message='Изображение не найдено')
+        if img_path != '':
+            if os.path.exists(img_path):
+                img = Image.open(img_path)
+                img = img.resize((300, 300))
+                img = ImageTk.PhotoImage(img)
+                self.original_image_display = ttk.Label(self.outputs_frame, image=img)
+                self.original_image_display.image = img
+                self.original_image_display.grid(row=1, column=0, padx=10, pady=20)
     
     def select_transformed_image_path(self) -> None:
         image_path = filedialog.askopenfilename(title="Open Image", filetypes=[
@@ -167,28 +165,35 @@ class GUI(tk.Tk):
         original_image_path = self.original_image_path.get()
         transformed_image_path = self.transformed_image_path.get()
         key_path = self.key_path.get()
-        if self.operation_type_str.get() == 'Кодирование':
-            iter_max = int(self.iter_max.get())
-            if original_image_path != '' and transformed_image_path != '' and key_path != '' and iter_max != '':
-                return True
-        elif self.operation_type_str.get() == 'Декодирование':
-            if original_image_path != '' and transformed_image_path != '' and key_path != '':
-                return True
+        if os.path.exists(original_image_path):
+            if self.operation_type_str.get() == 'Кодирование':
+                iter_max = int(self.iter_max.get())
+                if original_image_path != '' and os.path.exists(original_image_path) and transformed_image_path != '' and key_path != '' and iter_max != '':
+                    return True
+            elif self.operation_type_str.get() == 'Декодирование':
+                if original_image_path != '' and transformed_image_path != '' and key_path != '':
+                    return True
+        else:
+            messagebox.showerror(message='Изображение не найдено')
 
     def transform(self):
-        original_image_path = self.original_image_path.get()
-        transformed_image_path = self.transformed_image_path.get()
-        key_path = self.key_path.get()
-        rubik = Cubik(original_image_path)
-        if self.check_fields():
+        try:
+            original_image_path = self.original_image_path.get()
+            transformed_image_path = self.transformed_image_path.get()
+            key_path = self.key_path.get()
+            rubik = Rubik(original_image_path)
             if self.operation_type_str.get() == 'Кодирование':
                 iter_max = int(self.iter_max.get())
                 rubik.encrypt(transformed_image_path, iter_max, key_path)
             elif self.operation_type_str.get() == 'Декодирование':
                 rubik.decrypt(transformed_image_path, key_path)
-            self.display_transformed_image(transformed_image_path)
-        else:
-            messagebox.showerror(message='Заполните все поля')
+            self.display_transformed_image(transformed_image_path) 
+        except FileNotFoundError:
+            messagebox.showerror(message='Файл не найден')
+        except AttributeError:
+            messagebox.showerror(message='Изображение не найдено')
+        except ValueError:
+            messagebox.showerror(message='Непраивльный формат файла')
         
     def start_mainloop(self) -> None:
         self.operation_type_changed()
