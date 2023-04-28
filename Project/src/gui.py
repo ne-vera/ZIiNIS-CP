@@ -20,11 +20,17 @@ class GUI(tk.Tk):
         self.main_frame = ttk.Frame(self)
         self.main_frame.pack()
 
-        self.inputs_frame = ttk.LabelFrame(self.main_frame, text='Заполните поля')
-        self.inputs_frame.grid(row=1, column=0, padx=20, pady=10)
+        self.fileds_frame = ttk.LabelFrame(self.main_frame, text='Заполните поля')
+        self.fileds_frame.grid(row=1, column=0, padx=20, pady=10)
 
-        self.outputs_frame = ttk.LabelFrame(self.main_frame, text='Результат')
-        self.outputs_frame.grid(row=1, column=1, padx=20, pady=10)
+        self.inputs_frame = ttk.LabelFrame(self.fileds_frame, text='Входные параметры')
+        self.inputs_frame.grid(row=1, column=0, padx=20, pady=10)
+        
+        self.outputs_frame = ttk.LabelFrame(self.fileds_frame, text='Выходные параметры')
+        self.outputs_frame.grid(row=2, column=0, padx=20, pady=10)
+
+        self.images_frame = ttk.LabelFrame(self.main_frame, text='Результат')
+        self.images_frame.grid(row=1, column=1, padx=20, pady=10)
 
         # -----------------------------------------------
         # Label
@@ -59,20 +65,20 @@ class GUI(tk.Tk):
 
         # Key path
         self.key_path = tk.StringVar()
-        self.key_path_label = ttk.Label(self.inputs_frame, text = 'Путь к ключу:')
+        self.key_path_label = ttk.Label(self.outputs_frame, text = 'Путь к ключу:')
         self.key_path_label.grid(row=4, column=0, padx=10, pady=5, sticky='ew')
-        self.key_path_entry = ttk.Entry(self.inputs_frame, width= 50, textvariable=self.key_path)
+        self.key_path_entry = ttk.Entry(self.outputs_frame, width= 50, textvariable=self.key_path)
         self.key_path_entry.grid(row=5, column=0, padx=10, pady=5, sticky='ew')
-        self.btn_select_key_path = ttk.Button(self.inputs_frame, text = 'Открыть', command=lambda: self.select_key_path())
+        self.btn_select_key_path = ttk.Button(self.outputs_frame, text = 'Открыть', command=lambda: self.select_key_path())
         self.btn_select_key_path.grid(row=5, column=1, padx=10, pady=5, sticky='ew')
 
         # Transformed image path
         self.transformed_image_path = tk.StringVar()
-        self.transformed_image_path_label = ttk.Label(self.inputs_frame, text = 'Путь к закодированному изображению:')
+        self.transformed_image_path_label = ttk.Label(self.outputs_frame, text = 'Путь к закодированному изображению:')
         self.transformed_image_path_label.grid(row=8, column=0, padx=10, pady=5, sticky='ew')
-        self.transformed_image_path_entry = ttk.Entry(self.inputs_frame, width= 50, textvariable=self.transformed_image_path)
+        self.transformed_image_path_entry = ttk.Entry(self.outputs_frame, width= 50, textvariable=self.transformed_image_path)
         self.transformed_image_path_entry.grid(row=9, column=0, padx=10, pady=5, sticky='ew')
-        self.btn_choose_transfromed_image_path = ttk.Button(self.inputs_frame, text = 'Открыть', command=lambda: self.select_transformed_image_path())
+        self.btn_choose_transfromed_image_path = ttk.Button(self.outputs_frame, text = 'Открыть', command=lambda: self.select_transformed_image_path())
         self.btn_choose_transfromed_image_path.grid(row=9, column=1, padx=10, pady=5, sticky='ew')
 
         # Separator
@@ -85,13 +91,13 @@ class GUI(tk.Tk):
 
         # -----------------------------------------------
         # Output
-        self.original_image_label = ttk.Label(self.outputs_frame, text='Оригинальное изображение')
+        self.original_image_label = ttk.Label(self.images_frame, text='Оригинальное изображение')
         self.original_image_label.grid(row=0, column=0, padx=10, pady=20, sticky='ew')
 
-        self.transformed_image_label = ttk.Label(self.outputs_frame, text='Закодированное изображение')
+        self.transformed_image_label = ttk.Label(self.images_frame, text='Закодированное изображение')
         self.transformed_image_label.grid(row=0, column=1, padx=10, pady=20, sticky='ew')
 
-        self.progressbar = ttk.Progressbar(self.outputs_frame, orient='horizontal', mode='indeterminate')
+        self.progressbar = ttk.Progressbar(self.images_frame, orient='horizontal', mode='indeterminate')
         self.progressbar.grid(row=2, column=0, columnspan=2, sticky='ew')
         # -----------------------------------------------
 
@@ -137,7 +143,7 @@ class GUI(tk.Tk):
                 img = Image.open(img_path)
                 img = img.resize((300, 300))
                 img = ImageTk.PhotoImage(img)
-                self.original_image_display = ttk.Label(self.outputs_frame, image=img)
+                self.original_image_display = ttk.Label(self.images_frame, image=img)
                 self.original_image_display.image = img
                 self.original_image_display.grid(row=1, column=0, padx=10, pady=20)
     
@@ -157,7 +163,7 @@ class GUI(tk.Tk):
         img = Image.open(transformed_image_path)
         img = img.resize((300, 300))
         img = ImageTk.PhotoImage(img)
-        self.transformed_image_display = ttk.Label(self.outputs_frame, image=img)
+        self.transformed_image_display = ttk.Label(self.images_frame, image=img)
         self.transformed_image_display.image = img
         self.transformed_image_display.grid(row=1, column=1, padx=10, pady=20)
 

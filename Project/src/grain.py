@@ -1,4 +1,5 @@
 import cv2
+import timeit
 class Grain:
     def __init__(self, file, key, iv):
         self.img = cv2.imread(file, cv2.IMREAD_COLOR)
@@ -131,13 +132,15 @@ class Grain:
                 self.img[i][j] = self.decrypt(self.img[i][j])
         cv2.imwrite(outfile, self.img)
 
-original_image = '../Images/black.png'
-encrypted_image = '../Images/encrypted_image.png'
-decrypted_image = '../Images/decrypted_image.png'
+original_image =  '../Images/c12.png'
+encrypted_image = '../Images/g_c12_encrypted.png'
 
 
 image = Grain(original_image, "00000000000000000000", "0000000000000000")
+# start_time = timeit.default_timer()
 image.image_encrypt(encrypted_image)
+# ellapsed_time = timeit.default_timer() - start_time
+# print(ellapsed_time)
 
 # image = Grain(encrypted_image, "00000000000000000000", "0000000000000000")
 # image.image_decrypt(decrypted_image)

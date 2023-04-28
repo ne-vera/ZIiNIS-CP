@@ -1,8 +1,3 @@
-original_image = '../Images/black_square.png'
-encrypted_image = '../Images/encrypted_image.png'
-decrypted_image = '../Images/decrypted_image.png'
-
-
 import numpy as np
 import cv2 
 import os
@@ -11,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 import random
 from PIL import Image
+import timeit
      
 
 def to_Matrix(image):
@@ -66,10 +62,7 @@ def Arnold_decryption(image, key, decrypted_image_path):
         img = new_image
     cv2.imwrite(decrypted_image_path,img)
     return img
-     
-# key = 42
-# Arnold_EIm = Arnold_encryption(original_image, key, encrypted_image)
-# Arnold_DIm = Arnold_decryption(encrypted_image, key, decrypted_image)
+    
 
 # Henon Chaos Mapping
 def generate_Henon_map(dim, key):
@@ -155,9 +148,6 @@ def Henon_decryption(imageEnc, key, decrypted_image_path):
     im.save(decrypted_image_path)
      
 
-# key = (0.1,0.1)
-# Henon_encryption(original_image, key, encrypted_image)
-# Henon_decryption(encrypted_image, key, decrypted_image)
      
 
 # Combined Arnold+Henon Chaos Function
@@ -170,9 +160,27 @@ def Arnold_Henon_encryption(key1, key2, original_image_path, encrypted_image_pat
 def Arnold_Henon_decryption(key1, key2, encrypted_image_path, decrypted_image_path):
     Henon_decryption(encrypted_image_path, key2, decrypted_image_path)
     Arnold_DIm = Arnold_decryption(decrypted_image_path, key1, decrypted_image_path)
-     
-key1 = 42
-key2 = (0.5,0.5)
+
+
+original_image =  '../Images/c10.png'
+encrypted_image = '../Images/h_c10_encrypted.png'
+decrypted_image = '../Images/_decrypted.png'
+
+
+# start_time = timeit.default_timer()   
+# key1 = 42
+# key2 = (0.5,0.5)
      
 # Arnold_Henon_encryption(key1, key2, original_image, encrypted_image)
-Arnold_Henon_decryption(key1, key2, encrypted_image, decrypted_image)
+# Arnold_Henon_decryption(key1, key2, encrypted_image, decrypted_image)
+
+# key = 42
+# Arnold_EIm = Arnold_encryption(original_image, key, encrypted_image)
+# Arnold_DIm = Arnold_decryption(encrypted_image, key, decrypted_image)
+
+key = (0.1,0.1)
+Henon_encryption(original_image, key, encrypted_image)
+Henon_decryption(encrypted_image, key, decrypted_image)
+
+# ellapsed_time = timeit.default_timer() - start_time
+# print(ellapsed_time)

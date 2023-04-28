@@ -2,6 +2,8 @@ import numpy as np
 from PIL import Image
 from random import randint
 import json
+import timeit
+import matplotlib.pyplot as plt
 
 def columnshift(a, index, n):
     col = []
@@ -121,11 +123,32 @@ class Rubik():
         self.image.save(decrypted_image)
 
 
-# key_path = '../Keys/key.json'
-# encrypted_image = '../Images/encrypted_image.png'
+key_path = '../Keys/key.json'
+original_image =  '../Images/c12.png'
+encrypted_image = '../Images/r_c12_encrypted.png'
 # decrypted_image = '../Images/decrypted_image.png'
 
-# rubik = Rubik(r'../Images/taj.png')
-# rubik.encrypt(encrypted_image, 1, key_path)
+rubik = Rubik(original_image)
+rubik.encrypt(encrypted_image, 1, key_path)
+
+
 # rubik = Rubik(encrypted_image)
 # rubik.decrypt(decrypted_image, key_path)
+
+# Y = []
+# X = []
+# start_time = timeit.default_timer()
+# for i in range(1, 20):
+#     rubik.encrypt(encrypted_image, i, key_path)
+#     ellapsed_time = timeit.default_timer() - start_time
+#     print(ellapsed_time)
+#     X.append(i)
+#     Y.append(ellapsed_time)
+#     start_time = timeit.default_timer()
+# ellapsed_time = timeit.default_timer() - start_time
+# plt.plot(X, Y, '-ro')
+# plt.grid()
+# plt.xlabel('X')
+# plt.ylabel('Y')
+# plt.title(f'Зависимость времени вычисления от ITERmax')
+# plt.show()
