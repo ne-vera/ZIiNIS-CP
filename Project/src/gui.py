@@ -7,7 +7,6 @@ from PIL import ImageTk, Image
 import os
 import sv_ttk
 
-
 class GUI(tk.Tk):
     def __init__(self, *args, **kwargs) -> None:
         tk.Tk.__init__(self, *args, **kwargs)
@@ -20,14 +19,14 @@ class GUI(tk.Tk):
         self.main_frame = ttk.Frame(self)
         self.main_frame.pack()
 
-        self.fileds_frame = ttk.LabelFrame(self.main_frame, text='Заполните поля')
-        self.fileds_frame.grid(row=1, column=0, padx=20, pady=10)
+        self.fields_frame = ttk.Frame(self.main_frame)
+        self.fields_frame.grid(row=1, column=0, padx=20, pady=10)
 
-        self.inputs_frame = ttk.LabelFrame(self.fileds_frame, text='Входные параметры')
-        self.inputs_frame.grid(row=1, column=0, padx=20, pady=10)
+        self.inputs_frame = ttk.LabelFrame(self.fields_frame, text='Входные параметры')
+        self.inputs_frame.grid(row=1, column=0, columnspan=2, padx=0, pady=10)
         
-        self.outputs_frame = ttk.LabelFrame(self.fileds_frame, text='Выходные параметры')
-        self.outputs_frame.grid(row=2, column=0, padx=20, pady=10)
+        self.outputs_frame = ttk.LabelFrame(self.fields_frame, text='Выходные параметры')
+        self.outputs_frame.grid(row=2, column=0, columnspan=2, padx=0, pady=10)
 
         self.images_frame = ttk.LabelFrame(self.main_frame, text='Результат')
         self.images_frame.grid(row=1, column=1, padx=20, pady=10)
@@ -81,13 +80,9 @@ class GUI(tk.Tk):
         self.btn_choose_transfromed_image_path = ttk.Button(self.outputs_frame, text = 'Открыть', command=lambda: self.select_transformed_image_path())
         self.btn_choose_transfromed_image_path.grid(row=9, column=1, padx=10, pady=5, sticky='ew')
 
-        # Separator
-        self.separator = ttk.Separator(self.inputs_frame)
-        self.separator.grid(row=10, column=0, columnspan=2, padx=10, pady=20, sticky='ew')
-
         # Exit button
-        self.btn_exit = ttk.Button(self.inputs_frame, text='Выйти', width=20, command=self.destroy)
-        self.btn_exit.grid(row=11, column=0, padx=10, pady=20, sticky='w')
+        self.btn_exit = ttk.Button(self.fields_frame, text='Выйти', width=20, command=self.destroy)
+        self.btn_exit.grid(row=3, column=0, padx=10, pady=20, sticky='w')
 
         # -----------------------------------------------
         # Output
@@ -121,8 +116,8 @@ class GUI(tk.Tk):
             self.transformed_image_label.config(text='Декодированное изображение')
 
         # Transform button
-        self.btn_transform_image = ttk.Button(self.inputs_frame, text=text, state ='normal', style='Accent.TButton', width=20, command=lambda: self.transform())
-        self.btn_transform_image.grid(row=11, column=1, padx=10, pady=20, sticky='w')
+        self.btn_transform_image = ttk.Button(self.fields_frame, text=text, state ='normal', style='Accent.TButton', width=20, command=lambda: self.transform())
+        self.btn_transform_image.grid(row=3, column=1, padx=0, pady=20, sticky='w')
 
     def validate_iter(self, new_value):
         if new_value.isdigit():

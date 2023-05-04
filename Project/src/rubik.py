@@ -124,8 +124,8 @@ class Rubik():
 
 
 key_path = '../Keys/key.json'
-original_image =  '../Images/c12.png'
-encrypted_image = '../Images/r_c12_encrypted.png'
+original_image =  '../Images/lena.png'
+encrypted_image = '../Images/lena_encrypted.png'
 # decrypted_image = '../Images/decrypted_image.png'
 
 rubik = Rubik(original_image)
