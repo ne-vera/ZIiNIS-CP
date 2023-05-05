@@ -121,34 +121,3 @@ class Rubik():
             for j in range(self.n):
                 self.pix[i,j] = (self.r[i][j], self.g[i][j], self.b[i][j])
         self.image.save(decrypted_image)
-
-
-key_path = '../Keys/key.json'
-original_image =  '../Images/lena.png'
-encrypted_image = '../Images/lena_encrypted.png'
-# decrypted_image = '../Images/decrypted_image.png'
-
-rubik = Rubik(original_image)
-rubik.encrypt(encrypted_image, 1, key_path)
-
-
-# rubik = Rubik(encrypted_image)
-# rubik.decrypt(decrypted_image, key_path)
-
-# Y = []
-# X = []
-# start_time = timeit.default_timer()
-# for i in range(1, 20):
-#     rubik.encrypt(encrypted_image, i, key_path)
-#     ellapsed_time = timeit.default_timer() - start_time
-#     print(ellapsed_time)
-#     X.append(i)
-#     Y.append(ellapsed_time)
-#     start_time = timeit.default_timer()
-# ellapsed_time = timeit.default_timer() - start_time
-# plt.plot(X, Y, '-ro')
-# plt.grid()
-# plt.xlabel('X')
-# plt.ylabel('Y')
-# plt.title(f'Зависимость времени вычисления от ITERmax')
-# plt.show()

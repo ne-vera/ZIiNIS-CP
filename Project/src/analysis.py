@@ -10,11 +10,11 @@ from skimage.measure import shannon_entropy
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage import img_as_float, io
 
-original_paths = ['../Images/lena512.png',
+original_paths = ['../Images/lena.png',
                   '../Images/Mandril.png',
                   '../Images/Peppers.png']
 
-encrypted_paths = ['../Images/lena512_encrypted.png',
+encrypted_paths = ['../Images/lena_encrypted.png',
                   '../Images/Mandril_encrypted.png',
                   '../Images/Peppers_encrypted.png']
 
@@ -173,7 +173,6 @@ def count_correlations():
 
 # count_correlations()
 
-
 def sumofpixel(height,width,img1, img2):
     matrix = np.empty([width, height])
     for y in range(0, height):
@@ -191,8 +190,8 @@ def sumofpixel(height,width,img1, img2):
 
 def npcrv():
     for num in range(len(encrypted_paths)):
-        c1 = cv2.imread('../Images/h_c1' + str(num) +'_encrypted.png', 0)
-        c2 = cv2.imread('../Images/h_c2' + str(num) +'_encrypted.png', 0)
+        c1 = cv2.imread('../Images/r_c1' + str(num) +'_encrypted.png', 0)
+        c2 = cv2.imread('../Images/r_c2' + str(num) +'_encrypted.png', 0)
         height = c1.shape[0]
         width = c1.shape[1]
 

@@ -132,8 +132,8 @@ class Grain:
                 self.img[i][j] = self.decrypt(self.img[i][j])
         cv2.imwrite(outfile, self.img)
 
-original_image =  '../Images/c12.png'
-encrypted_image = '../Images/g_c12_encrypted.png'
+original_image =  '../Images/c20.png'
+encrypted_image = '../Images/g_c20_encrypted.png'
 
 
 image = Grain(original_image, "00000000000000000000", "0000000000000000")

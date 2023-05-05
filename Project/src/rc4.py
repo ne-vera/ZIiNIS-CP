@@ -1,6 +1,7 @@
 from PIL import Image
 import imageio
 import binascii
+import timeit
 
 def save_image(image, file_name, show=False):
     img = Image.fromarray(image.astype('uint8'), 'RGB')
@@ -63,21 +64,27 @@ def rc4_cipher(image_path, key, file_name, decrypt=False):
         for j in range(img_height):
             pixel = image[i, j]
             t = next(ran_gen)
-            r = (pixel[0] + (t if not decrypt else (256 - t))) % 256
-            t = next(ran_gen)
-            g = (pixel[1] + (t if not decrypt else (256 - t))) % 256
-            t = next(ran_gen)
-            b = (pixel[2] + (t if not decrypt else (256 - t))) % 256
-            image[i, j] = (r, g, b)
+            # r = (pixel[0] + (t if not decrypt else (256 - t))) % 256
+            # t = next(ran_gen)
+            # g = (pixel[1] + (t if not decrypt else (256 - t))) % 256
+            # t = next(ran_gen)
+            # b = (pixel[2] + (t if not decrypt else (256 - t))) % 256
+            # image[i, j] = (r, g, b)
+            p = (pixel + (t if not decrypt else (256 - t))) % 256
+            image[i,j] = p
+    img = Image.fromarray(image)
+    img.save(file_name)
 
-    save_image(image, file_name, show = True)
+    # save_image(image, file_name, show = False)
     print("Completed")
 
-original_image = '../Images/taj.png'
-encrypted_image = '../Images/encrypted_image.png'
+original_image =  '../Images/c10.png'
+encrypted_image = '../Images/r_c10_encrypted.png'
 decrypted_image = '../Images/decrypted_image.png'
 
 key = '111'.encode()
-
+# start_time = timeit.default_timer()
 rc4_cipher(original_image, key, encrypted_image, decrypt=False)
-rc4_cipher(encrypted_image, key, decrypted_image, decrypt=True)
+# ellapsed_time = timeit.default_timer() - start_time
+# print(ellapsed_time)
+# rc4_cipher(encrypted_image, key, decrypted_image, decrypt=True)

@@ -92,8 +92,8 @@ class GUI(tk.Tk):
         self.transformed_image_label = ttk.Label(self.images_frame, text='Закодированное изображение')
         self.transformed_image_label.grid(row=0, column=1, padx=10, pady=20, sticky='ew')
 
-        self.progressbar = ttk.Progressbar(self.images_frame, orient='horizontal', mode='indeterminate')
-        self.progressbar.grid(row=2, column=0, columnspan=2, sticky='ew')
+        # self.progressbar = ttk.Progressbar(self.images_frame, orient='horizontal', mode='indeterminate')
+        # self.progressbar.grid(row=2, column=0, columnspan=2, sticky='ew')
         # -----------------------------------------------
 
     def operation_type_changed(self) -> None:
